@@ -1,0 +1,40 @@
+{
+  "name": "flpc-tithe",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "emulators": "firebase emulators:start --only auth,firestore",
+    "seed": "node scripts/seed.js",
+    "set-role": "node scripts/set-role.js"
+  },
+  "dependencies": {
+    "csv-stringify": "^6.9.0",
+    "exceljs": "^4.4.0",
+    "firebase": "^13.4.0",
+    "firebase-admin": "^14.5.1",
+    "next": "^15.5.29",
+    "pdfkit": "^0.21.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pdfkit": "^0.17.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.7.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.29",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.1"
+  }
+}
