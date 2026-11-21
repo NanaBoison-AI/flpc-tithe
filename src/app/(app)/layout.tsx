@@ -16,7 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <button className="btn-secondary" onClick={logout}>Sign out</button>
     </main>
   );
-  const links = [["/dashboard", "Dashboard"], ["/record", "Record"], ["/records", "Records"], ["/members", "Members"],
+  const links = [["/dashboard", "Dashboard"], ["/record", "Record"], ["/records", "Records"], ["/reports/unpaid", "Not paid"], ["/members", "Members"],
     ...(role === "admin" ? [["/admin/templates", "SMS templates"], ["/admin/sms-logs", "SMS logs"], ["/admin/settings", "Settings"]] : [])];
   return (
     <div className="mx-auto max-w-5xl">

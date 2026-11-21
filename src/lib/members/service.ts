@@ -99,3 +99,9 @@ export async function bulkCreate(rows: { fullName: string; phone: string; member
   }
   invalidateMemberCache();
 }
+
+export async function memberDirectory() { return allMembers(); }
+export async function getMember(id: string) {
+  const s = await col().doc(id).get();
+  return s.exists ? ({ id, ...(s.data() as { fullName: string; phone: string; memberNumber?: string; status: string }) }) : null;
+}
