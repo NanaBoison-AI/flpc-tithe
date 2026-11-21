@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, loading, logout } = useAuth();
+  const { user, role, loading, logout, refreshRole } = useAuth();
   const router = useRouter();
   useEffect(() => { if (!loading && !user) router.replace("/login"); }, [loading, user, router]);
 
   if (loading || !user) return <p className="p-6">Loading…</p>;
   if (!role) return (
     <main className="mx-auto max-w-sm p-6 space-y-4">
-      <p>Your account has no role assigned. Ask an administrator to assign one.</p>
-      <button className="btn-secondary" onClick={logout}>Sign out</button>
+      <p>Your account has no role assigned yet. Ask an administrator to assign one, then tap &quot;Check again&quot;.</p>
+      <div className="flex gap-2"><button className="btn" onClick={refreshRole}>Check again</button><button className="btn-secondary" onClick={logout}>Sign out</button></div>
     </main>
   );
   const links = [["/dashboard", "Dashboard"], ["/record", "Record"], ["/records", "Records"], ["/reports/unpaid", "Not paid"], ["/members", "Members"],

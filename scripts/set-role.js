@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Usage: node scripts/set-role.js <email> <admin|recorder>
+// Optional convenience: writes users/{uid} = { role } (the same thing you can do by hand in the Firebase console).
 // Needs FIREBASE_PROJECT_ID + FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY in env (or .env.local),
 // or FIREBASE_AUTH_EMULATOR_HOST for the emulator.
 const fs = require("fs");
@@ -26,7 +27,6 @@ admin.initializeApp(
 );
 (async () => {
   const user = await admin.auth().getUserByEmail(email);
-  await admin.auth().setCustomUserClaims(user.uid, { role });
-  await admin.auth().revokeRefreshTokens(user.uid); // forces re-login so the new role applies
-  console.log(`Role "${role}" set for ${email}. They must sign in again.`);
+  await admin.firestore().collection("users").doc(user.uid).set({ role, email, updatedAt: new Date() }, { merge: true });
+  console.log(`Role "${role}" set for ${email} (users/${user.uid}). It applies within about a minute.`);
 })().catch((e) => { console.error("Failed:", e.message); process.exit(1); });

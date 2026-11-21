@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { adminAuth } from "@/lib/firebase/admin";
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { rateLimit } from "@/lib/ratelimit";
 
 export type Role = "admin" | "recorder";
@@ -10,7 +10,23 @@ export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-/** Verify the Firebase ID token and role claim. Throws HttpError(401/403). */
+// Role lookups are cached briefly so every API call doesn't cost an extra Firestore read.
+// A role change made in the console therefore takes effect within ~60 seconds.
+const ROLE_TTL_MS = 60_000;
+const roleCache = new Map<string, { role: Role | null; at: number }>();
+export const _resetRoleCache = () => roleCache.clear();
+
+async function roleFor(uid: string): Promise<Role | null> {
+  const hit = roleCache.get(uid);
+  if (hit && Date.now() - hit.at < ROLE_TTL_MS) return hit.role;
+  const snap = await adminDb().collection("users").doc(uid).get();
+  const r = snap.exists ? snap.data()?.role : undefined;
+  const role: Role | null = r === "admin" || r === "recorder" ? r : null;
+  if (role) roleCache.set(uid, { role, at: Date.now() }); // never cache "no role", so a newly added user works immediately
+  return role;
+}
+
+/** Verify the Firebase ID token, then read the role from users/{uid}. Throws HttpError(401/403). */
 export async function requireRole(req: Request, allowed: Role[] = ["admin", "recorder"]): Promise<Staff> {
   const h = req.headers.get("authorization") ?? "";
   const token = h.startsWith("Bearer ") ? h.slice(7) : "";
@@ -18,8 +34,8 @@ export async function requireRole(req: Request, allowed: Role[] = ["admin", "rec
   let decoded;
   try { decoded = await adminAuth().verifyIdToken(token, true); }
   catch { throw new HttpError(401, "Invalid or expired token"); }
-  const role = decoded.role as Role | undefined;
-  if (role !== "admin" && role !== "recorder") throw new HttpError(403, "No role assigned");
+  const role = await roleFor(decoded.uid);
+  if (!role) throw new HttpError(403, "No role assigned");
   if (!allowed.includes(role)) throw new HttpError(403, "Insufficient permissions");
   return { uid: decoded.uid, email: decoded.email ?? "", role };
 }

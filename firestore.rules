@@ -1,14 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isStaff() {
-      return request.auth != null && request.auth.token.role in ['admin', 'recorder'];
+    // Roles live in users/{uid} = { role: "admin" | "recorder" }. Edit them in the Firebase console.
+    function role() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
     }
-    function isAdmin() {
-      return request.auth != null && request.auth.token.role == 'admin';
-    }
+    function isStaff() { return request.auth != null && role() in ['admin', 'recorder']; }
+    function isAdmin() { return request.auth != null && role() == 'admin'; }
 
-    // All writes go through server routes (Admin SDK bypasses these rules).
+    // Nobody can write from the browser. All writes go through server routes (Admin SDK bypasses these rules).
+    match /users/{uid}       { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
     match /members/{id}      { allow read: if isStaff(); allow write: if false; }
     match /tithes/{id}       { allow read: if isStaff(); allow write: if false; }
     match /smsTemplates/{id} { allow read: if isAdmin(); allow write: if false; }

@@ -4,8 +4,8 @@ import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 
 export type Role = "admin" | "recorder";
-interface Ctx { user: User | null; role: Role | null; loading: boolean; logout: () => Promise<void> }
-const AuthCtx = createContext<Ctx>({ user: null, role: null, loading: true, logout: async () => {} });
+interface Ctx { user: User | null; role: Role | null; loading: boolean; logout: () => Promise<void>; refreshRole: () => Promise<void> }
+const AuthCtx = createContext<Ctx>({ user: null, role: null, loading: true, logout: async () => {}, refreshRole: async () => {} });
 export const useAuth = () => useContext(AuthCtx);
 
 const IDLE_MS = Number(process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES ?? 30) * 60_000;
@@ -17,15 +17,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const last = useRef(Date.now());
 
+  // The role lives in Firestore (users/{uid}) and is read by the server, never trusted from the browser.
+  const fetchRole = useCallback(async (u: User | null) => {
+    if (!u) { setRole(null); return; }
+    try {
+      const r = await apiFetch("/api/me");
+      const j = r.ok ? await r.json() : null;
+      setRole(j?.role === "admin" || j?.role === "recorder" ? j.role : null);
+    } catch { setRole(null); }
+  }, []);
+  const refreshRole = useCallback(async () => { setLoading(true); await fetchRole(auth.currentUser); setLoading(false); }, [fetchRole]);
+
   useEffect(() => onAuthStateChanged(auth, async (u) => {
     setUser(u);
-    if (u) {
-      const t = await u.getIdTokenResult(true);
-      const r = t.claims.role;
-      setRole(r === "admin" || r === "recorder" ? r : null);
-    } else setRole(null);
+    await fetchRole(u);
     setLoading(false);
-  }), []);
+  }), [fetchRole]);
 
   const logout = useCallback(async () => { await signOut(auth); }, []);
 
@@ -39,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => { EVENTS.forEach((e) => window.removeEventListener(e, bump)); clearInterval(timer); };
   }, [user]);
 
-  return <AuthCtx.Provider value={{ user, role, loading, logout }}>{children}</AuthCtx.Provider>;
+  return <AuthCtx.Provider value={{ user, role, loading, logout, refreshRole }}>{children}</AuthCtx.Provider>;
 }
 
 /** fetch wrapper that attaches the Firebase ID token. */

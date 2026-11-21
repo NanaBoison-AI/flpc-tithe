@@ -4,7 +4,7 @@ A mobile-friendly web app for recording church tithes, sending SMS acknowledgeme
 
 - **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind · Firebase Auth + Firestore · mNotify SMS · zod · exceljs · pdfkit
 - **Access:** staff only. There is no public sign-up. Accounts are created by hand in the Firebase console.
-- **Roles** (Firebase custom claims): `admin` (everything) and `recorder` (record tithes, search members, view and export records).
+- **Roles** (stored in a Firestore `users` collection, one document per user): `admin` (everything) and `recorder` (record tithes, search members, view and export records).
 
 Staff guide: [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
 
@@ -22,19 +22,26 @@ Staff guide: [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
 
 ## 2. Create users and assign roles
 
-There is no sign-up page, so:
+There is no sign-up page, and no terminal is needed:
 
-1. **Firebase console → Authentication → Users → Add user** (email + temporary password).
-2. Assign a role (needs the service-account env vars from step 1.5 in `.env.local`):
+1. **Create the login:** Firebase console → **Authentication → Users → Add user** (email + temporary password). Copy the user's **User UID** from the users table.
+2. **Give them a role:** Firebase console → **Firestore Database → Data**.
+   - First time only: **Start collection** → Collection ID `users`.
+   - **Document ID:** paste the person's User UID (not their email).
+   - **Field:** name `role`, type `string`, value `admin` or `recorder`. Save.
+   - Optional extra field `email` (string) is just a reminder of who it is.
+3. To change someone's role, edit that document's `role`. To remove access, delete the document (or the user in Authentication).
 
-```bash
-node scripts/set-role.js admin@yourchurch.org admin
-node scripts/set-role.js clerk@yourchurch.org recorder
-```
+The change applies within about a minute (the server caches roles briefly). A signed-in user who was waiting can tap **Check again** on the "no role" screen.
 
-3. The person must **sign in again** for the role to take effect (the script revokes their old sessions). A user with no role can sign in but sees nothing.
+| `users/{uid}.role` | Can do |
+|---|---|
+| `admin` | everything |
+| `recorder` | record tithes, search members, view and export records |
 
-Every API route re-checks the token **and** the role on the server. The role-based menu is only a convenience.
+Anything else (missing document, misspelt role) means no access. Every API route checks the Firebase ID token **and** reads the role from this collection on the server, so a browser can't grant itself a role. Firestore rules block all client writes, including to `users`.
+
+*Optional:* `node scripts/set-role.js <email> <admin|recorder>` writes the same `users/{uid}` document if you ever do have a terminal.
 
 ## 3. Environment variables
 
@@ -44,7 +51,7 @@ Copy `.env.example` to `.env.local` and fill it in.
 |---|---|
 | `NEXT_PUBLIC_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, `_PROJECT_ID`, `_APP_ID` | Firebase web config (public by design) |
 | `NEXT_PUBLIC_USE_EMULATORS` | `true` to point the browser at the local Auth emulator |
-| `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Admin SDK credentials (**server only**) |
+| `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Admin SDK credentials (**server only**), used by the server on Vercel |
 | `MNOTIFY_API_KEY` | mNotify API key (**server only**) |
 | `MNOTIFY_SENDER_ID` | Registered sender ID, max 11 characters (fallback; can also be set in Settings) |
 | `MNOTIFY_BASE_URL` | Defaults to `https://api.mnotify.com/api` |
