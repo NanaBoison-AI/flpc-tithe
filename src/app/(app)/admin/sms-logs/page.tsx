@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch, useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/Toast";
+import { formatDateTime } from "@/lib/time";
 import { MemberPicker, type PickedMember } from "@/components/MemberPicker";
 
 interface Log { id: string; titheId: string; phone: string; messageText: string; status: "sent" | "failed"; attempts: number; error?: string | null; createdAt?: string; sentAt?: string | null }
@@ -13,6 +14,8 @@ export default function SmsLogsPage() {
   const [member, setMember] = useState<PickedMember | null>(null);
   const [logs, setLogs] = useState<Log[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tz, setTz] = useState("Africa/Accra");
+  useEffect(() => { (async () => { const r = await apiFetch("/api/settings"); if (r.ok) setTz((await r.json()).timezone); })(); }, []);
 
   const load = useCallback(async () => {
     const p = new URLSearchParams(); if (from) p.set("from", from); if (to) p.set("to", to); if (status) p.set("status", status); if (member) p.set("memberId", member.id);
@@ -41,7 +44,7 @@ export default function SmsLogsPage() {
       {logs === null ? <p className="text-slate-500">Loading…</p> : logs.length === 0 ? <p className="card text-slate-600">No SMS logs match.</p> : (
         <ul className="space-y-2">{logs.map((l) => (
           <li key={l.id} className="card space-y-1">
-            <div className="flex items-center gap-2"><span className={`rounded px-2 py-1 text-xs font-medium ${l.status === "sent" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>{l.status}</span><span className="text-sm">{l.phone}</span><span className="ml-auto text-xs text-slate-500">{l.createdAt ? new Date(l.createdAt).toLocaleString() : ""} · {l.attempts} attempt{l.attempts === 1 ? "" : "s"}</span></div>
+            <div className="flex items-center gap-2"><span className={`rounded px-2 py-1 text-xs font-medium ${l.status === "sent" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>{l.status}</span><span className="text-sm">{l.phone}</span><span className="ml-auto text-xs text-slate-500">{l.createdAt ? formatDateTime(l.createdAt, tz) : ""} · {l.attempts} attempt{l.attempts === 1 ? "" : "s"}</span></div>
             <p className="text-sm">{l.messageText}</p>
             {l.error && <p className="text-sm text-red-700">{l.error}</p>}
           </li>))}</ul>)}

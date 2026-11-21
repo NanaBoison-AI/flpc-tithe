@@ -47,3 +47,9 @@ export function dayEndUtc(date: string, tz = DEFAULT_TZ): Date {
   const next = new Date(Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10) + 1)).toISOString().slice(0, 10);
   return dayStartUtc(next, tz);
 }
+
+/** Display an ISO timestamp in the church's timezone, e.g. "08 Mar 2026, 14:05". */
+export function formatDateTime(iso: string | null | undefined, tz = DEFAULT_TZ): string {
+  if (!iso) return "";
+  return new Intl.DateTimeFormat("en-GB", { timeZone: tz, day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
+}

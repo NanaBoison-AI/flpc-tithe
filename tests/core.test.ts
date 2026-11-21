@@ -32,3 +32,13 @@ describe("tz day bounds", () => {
   it("Lagos (UTC+1)", () => { expect(dayStartUtc("2026-03-01", "Africa/Lagos").toISOString()).toBe("2026-02-28T23:00:00.000Z"); expect(dayEndUtc("2026-03-01", "Africa/Lagos").toISOString()).toBe("2026-03-01T23:00:00.000Z"); });
   it("DST zone", () => { expect(dayStartUtc("2026-07-01", "America/New_York").toISOString()).toBe("2026-07-01T04:00:00.000Z"); });
 });
+import { summarizeMonth } from "@/lib/dashboard";
+import { formatDateTime } from "@/lib/time";
+describe("dashboard + display time", () => {
+  const r = (o: any) => ({ id: "x", paymentDate: "2026-03-08", memberId: "m1", memberName: "A", phone: "", amount: 1000, currency: "GHS", method: "cash", status: "active", smsStatus: "sent", recordedBy: "", ...o });
+  it("summarizes, ignoring voided and counting distinct payers", () => {
+    expect(summarizeMonth([r({}), r({ amount: 500 }), r({ memberId: "m2", paymentDate: "2026-03-02" }), r({ status: "voided", amount: 9999 })] as any, "2026-03-08"))
+      .toEqual({ monthTotal: 2500, monthCount: 3, payers: 2, todayCount: 2, todayTotal: 1500 });
+  });
+  it("formats in church tz", () => { expect(formatDateTime("2026-03-31T23:30:00Z", "Africa/Lagos")).toBe("01 Apr 2026, 00:30"); expect(formatDateTime(null)).toBe(""); });
+});

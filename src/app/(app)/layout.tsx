@@ -17,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </main>
   );
   const links = [["/dashboard", "Dashboard"], ["/record", "Record"], ["/records", "Records"], ["/reports/unpaid", "Not paid"], ["/members", "Members"],
-    ...(role === "admin" ? [["/admin/templates", "SMS templates"], ["/admin/sms-logs", "SMS logs"], ["/admin/settings", "Settings"]] : [])];
+    ...(role === "admin" ? [["/admin/templates", "SMS templates"], ["/admin/sms-logs", "SMS logs"], ["/admin/audit", "Audit log"], ["/admin/settings", "Settings"]] : [])];
   return (
     <div className="mx-auto max-w-5xl">
       <header className="sticky top-0 z-10 border-b bg-white">
