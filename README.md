@@ -70,15 +70,7 @@ firebase use --add            # choose your project
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-**No terminal? Deploy from GitHub instead.** The workflow `.github/workflows/deploy-firestore.yml` deploys the rules and indexes automatically whenever `firestore.rules`, `firestore.indexes.json` or `firebase.json` change on `main` (or when you click **Actions → Deploy Firestore rules and indexes → Run workflow**). One-time setup:
-
-1. In <https://console.cloud.google.com> (same project) → **IAM & Admin → Service accounts → Create service account** (e.g. `firestore-deployer`). Use a *separate* account, not the one the app uses at runtime.
-2. Grant it these roles (**IAM → Grant access**): *Firebase Rules Admin*, *Cloud Datastore Index Admin*, *Service Usage Consumer*. If the first run reports a missing permission, add the one it names (or use the broader *Firebase Admin* role).
-3. On the service account → **Keys → Add key → Create new key → JSON**. Open the downloaded file in a text editor and copy all of it.
-4. In GitHub: repo → **Settings → Secrets and variables → Actions → New repository secret**, and add:
-   - `FIREBASE_DEPLOY_SERVICE_ACCOUNT` = the entire JSON from step 3
-   - `FIREBASE_PROJECT_ID` = your Firebase project ID
-5. Delete the downloaded key file from your computer. Run the workflow once manually to check it works; indexes then take a few minutes to build in the Firebase console.
+**No terminal?** Paste `firestore.rules` into Firebase console → Firestore → **Rules** → Publish, and create the composite indexes in the console (Firestore → **Indexes**), or open the "create index" link that appears in an error when a screen needs one.
 
 - `firestore.rules` denies **all** client writes; the browser never talks to Firestore directly. All writes go through the server (Admin SDK bypasses rules).
 - `firestore.indexes.json` defines the composite indexes. They take a few minutes to build; queries that need one fail until it is ready. If the console shows a "create index" link for a query I didn't anticipate, accept it and add it to the file.
