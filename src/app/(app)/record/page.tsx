@@ -75,6 +75,15 @@ export default function RecordPage() {
     return bad.length === 0;
   }
 
+  async function retrySms(id: string) {
+    const r = await apiFetch(`/api/tithes/${id}/send-sms`, { method: "POST" });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) toast("error", j.error ?? "Retry failed");
+    else if (j.status === "sent" || j.status === "already_sent") toast("success", "SMS sent");
+    else if (j.status === "in_progress") toast("error", "A send is already in progress");
+    else toast("error", `SMS failed: ${j.error ?? "unknown error"}`);
+    loadDay();
+  }
   async function saveNow() { const d = currentDraft(); if (d && (await submit([d]))) resetForm(); }
   function addToBatch() { const d = currentDraft(); if (d) { setBatch((b) => [...b, d]); resetForm(); } }
   const batchTotal = batch.reduce((n, d) => n + cediToPesewas(d.amount), 0);
@@ -128,6 +137,7 @@ export default function RecordPage() {
               <div className="mr-auto min-w-0"><p className="truncate font-medium">{i.memberNameSnapshot}</p><p className="text-sm text-slate-600">{METHOD_LABEL[i.paymentMethod as Method] ?? i.paymentMethod}{i.reference ? ` · ${i.reference}` : ""}</p></div>
               <p className="font-medium">{formatMoney(i.amount, i.currency)}</p>
               {i.status === "active" && <span className={`rounded px-2 py-1 text-xs font-medium ${SMS_BADGE[i.smsStatus]}`}>SMS {i.smsStatus}</span>}
+              {i.status === "active" && (i.smsStatus === "failed" || i.smsStatus === "pending") && <button className="btn-secondary" onClick={() => retrySms(i.id)}>Retry SMS</button>}
             </li>))}</ul>)}
       </div>
     </div>

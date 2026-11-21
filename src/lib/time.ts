@@ -29,3 +29,21 @@ export function presetRange(preset: "this_month" | "last_month" | "this_year", t
 }
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 export const monthName = (key: string) => MONTHS[Number(key.slice(5, 7)) - 1];
+
+function tzOffsetMs(tz: string, at: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" }).formatToParts(at);
+  const g = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  return Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute"), g("second")) - Math.floor(at.getTime() / 1000) * 1000;
+}
+/** UTC instant at which the given local calendar day starts in tz. */
+export function dayStartUtc(date: string, tz = DEFAULT_TZ): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  const guess = Date.UTC(y, m - 1, d);
+  const first = guess - tzOffsetMs(tz, new Date(guess));
+  return new Date(guess - tzOffsetMs(tz, new Date(first)));
+}
+/** Exclusive end: start of the next local day. */
+export function dayEndUtc(date: string, tz = DEFAULT_TZ): Date {
+  const next = new Date(Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10) + 1)).toISOString().slice(0, 10);
+  return dayStartUtc(next, tz);
+}

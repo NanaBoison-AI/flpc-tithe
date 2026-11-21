@@ -26,3 +26,9 @@ describe("template", () => {
   it("flags unknown", () => expect(findUnknownPlaceholders("{name} {foo} {bar}")).toEqual(["foo","bar"]));
   it("segments", () => { expect(smsStats("a".repeat(160)).segments).toBe(1); expect(smsStats("a".repeat(161)).segments).toBe(2); expect(smsStats("é".repeat(10)).encoding).toBe("GSM-7"); expect(smsStats("😀").encoding).toBe("Unicode"); expect(smsStats("a".repeat(71)+"😀").segments).toBe(2); });
 });
+import { dayStartUtc, dayEndUtc } from "@/lib/time";
+describe("tz day bounds", () => {
+  it("Accra = UTC", () => { expect(dayStartUtc("2026-03-01", "Africa/Accra").toISOString()).toBe("2026-03-01T00:00:00.000Z"); });
+  it("Lagos (UTC+1)", () => { expect(dayStartUtc("2026-03-01", "Africa/Lagos").toISOString()).toBe("2026-02-28T23:00:00.000Z"); expect(dayEndUtc("2026-03-01", "Africa/Lagos").toISOString()).toBe("2026-03-01T23:00:00.000Z"); });
+  it("DST zone", () => { expect(dayStartUtc("2026-07-01", "America/New_York").toISOString()).toBe("2026-07-01T04:00:00.000Z"); });
+});

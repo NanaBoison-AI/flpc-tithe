@@ -17,7 +17,6 @@ export async function getSettings(): Promise<Settings> {
   const base = defaultSettings();
   const d = (snap.data() ?? {}) as Partial<Settings>;
   const v: Settings = { ...base, ...Object.fromEntries(Object.entries(d).filter(([, x]) => x !== undefined && x !== "")) };
-  if (!snap.exists || !d.senderId) v.senderId = d.senderId || base.senderId;
   cache = { at: Date.now(), v };
   return v;
 }
